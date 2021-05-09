@@ -105,6 +105,15 @@ func (r *RuntimeReconciler) ReconcileInternal(ctx cruntime.ReconcileRequestConte
 	}
 
 	if dataset != nil {
+                if utils.IsSetupDone(ctx.Dataset) {
+                        templateEngine, ok := engine.(*base.TemplateEngine)
+                        if ok {
+                              ctx.Log.V(1).Info("engine set up, check UFS changes ")
+                        //      templateEngine.PrepareUFS()
+                              templateEngine.CheckUFSChange()
+                        }
+                }
+
 		// 6.Add the OwnerReference of runtime and requeue
 		if !utils.ContainsOwners(objectMeta.GetOwnerReferences(), dataset) {
 			return r.AddOwnerAndRequeue(ctx, dataset)

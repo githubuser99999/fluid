@@ -469,3 +469,47 @@ func (a AlluxioFileUtils) execWithoutTimeout(command []string, verbose bool) (st
 
 	return
 }
+
+func (a AlluxioFileUtils) GetMounted() (mounted[] string, err error) {
+	var (
+		command = []string{"alluxio", "fs", "mount"}
+		stdout  string
+		stderr  string
+	)
+
+	stdout, stderr, err = a.exec(command, true)
+	if err != nil {
+		return mounted, fmt.Errorf("execute command %v with expectedErr: %v stdout %s and stderr %s", command, err, stdout, stderr)
+	}
+
+	results := strings.Split(stdout, "\n")
+	for _, line := range results {
+		fields := strings.Fields(line)
+		if fields[2] != "/" {
+			mounted = append(mounted, fields[2])
+		}
+
+	}
+
+	return mounted, err
+}
+
+func (a AlluxioFileUtils) UnMount(alluxioPath string) (err error) {
+	var (
+		command = []string{"alluxio", "fs", "unmount"}
+		stderr  string
+		stdout  string
+	)
+
+	command = append(command, alluxioPath)
+
+	stdout, stderr, err = a.exec(command, false)
+	if err != nil {
+		err = fmt.Errorf("execute command %v with expectedErr: %v stdout %s and stderr %s", command, err, stdout, stderr)
+		return
+	}
+
+	return
+}
+
+

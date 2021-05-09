@@ -491,6 +491,19 @@ func (mr *MockImplementMockRecorder) DeleteVolume() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteVolume", reflect.TypeOf((*MockImplement)(nil).DeleteVolume))
 }
 
+// Check if need to add or remove mount point
+func (m *MockImplement) CheckUFSChange() (err error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckUFSChange")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (mr *MockImplementMockRecorder) CheckUFSChange() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckUFSChange", reflect.TypeOf((*MockImplement)(nil).CheckUFSChange))
+}
+
 // MockUnderFileSystemService is a mock of UnderFileSystemService interface
 type MockUnderFileSystemService struct {
 	ctrl     *gomock.Controller

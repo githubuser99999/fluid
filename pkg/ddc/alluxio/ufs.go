@@ -98,6 +98,19 @@ func (e *AlluxioEngine) reportCapacity() (summary string, err error) {
 	return fileUtils.ReportCapacity()
 }
 
+// check if need to add or remove mount point
+func (e *AlluxioEngine) CheckUFSChange() (err error) {
+	// 1. Get mount from dataset
+	result_dataset, result_mountted, err := e.getMounts()
+
+	// 2. get mount points need to be added and removed
+	added, removed := e.calculateMountPointsChanges(result_mountted, result_dataset)
+
+	// 3. process added and removed
+    err = e.processUFS(added, removed)
+	return
+}
+
 ////du the ufs
 //func (e *AlluxioEngine) du() (ufs int64, cached int64, cachedPercentage string, err error) {
 //	podName, containerName := e.getMasterPodInfo()

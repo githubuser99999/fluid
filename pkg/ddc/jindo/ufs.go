@@ -43,3 +43,7 @@ func (e *JindoEngine) reportSummary() (summary string, err error) {
 	fileUtils := operations.NewJindoFileUtils(podName, containerName, e.namespace, e.Log)
 	return fileUtils.ReportSummary()
 }
+
+func (e *JindoEngine) CheckUFSChange() (err error) {
+	return
+}

@@ -91,6 +91,9 @@ type Implement interface {
 
 	// BindToDataset binds the engine to dataset
 	BindToDataset() (err error)
+
+	// check if need to add or remove mount point
+	CheckUFSChange() (err error)
 }
 
 // UnderFileSystemService interface defines the interfaces that should be implemented

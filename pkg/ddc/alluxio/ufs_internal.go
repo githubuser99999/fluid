@@ -161,3 +161,144 @@ func (e *AlluxioEngine) mountUFS() (err error) {
 	}
 	return nil
 }
+
+func (e *AlluxioEngine) getMounts() (result_dataset[] string, result_mountted[] string, err error) {
+	dataset, err := utils.GetDataset(e.Client, e.name, e.namespace)
+	e.Log.V(1).Info("get dataset info", "dataset", dataset)
+	if err != nil {
+		return result_dataset, result_mountted, err
+	}
+
+	podName, containerName := e.getMasterPodInfo()
+	fileUitls := operations.NewAlluxioFileUtils(podName, containerName, e.namespace, e.Log)
+
+	ready := fileUitls.Ready()
+	if !ready {
+		err = fmt.Errorf("the UFS is not ready")
+		return result_dataset,result_mountted, err
+	}
+
+	// Check if any of the Mounts has not been mounted in Alluxio
+	for _, mount := range dataset.Spec.Mounts {
+		if e.isFluidNativeScheme(mount.MountPoint) {
+			// No need for a mount point with Fluid native scheme('local://' and 'pvc://') to be mounted
+			continue
+		}
+		alluxioPath := fmt.Sprintf("/%s", mount.Name)
+		result_dataset = append(result_dataset, alluxioPath)
+
+	}
+
+	result_mountted, err = fileUitls.GetMounted()
+
+	return result_dataset, result_mountted, err
+
+}
+
+func (e *AlluxioEngine) calculateMountPointsChanges(mounts_mountted []string, mounts_dataset []string) ([]string, []string) {
+	msrc := make(map[string]byte) //build index by source(exists)  getMountted
+	mall := make(map[string]byte) //build index by source and target(ctx) mounts_dataset
+	var set []string //the intersection
+	//1.build map by source
+	for _, v := range mounts_mountted {
+		msrc[v] = 0
+		mall[v] = 0
+	}
+	//2.if length does not changed, then intersected, mall will be the union (contain all elements) in the end
+	for _, v := range mounts_dataset {  //mounts_ctx  alluxioPath from dataset
+		l := len(mall)
+		mall[v] = 1
+		if l != len(mall) { //add new
+			l = len(mall)
+		} else { // intersected
+			set = append(set, v)
+		}
+	}
+	//3.loop the intersection，find it in the union, if found, then delete it from the union, mall will be the complement(union - intersection)
+	for _, v := range set {
+		delete(mall, v)
+	}
+	//4.find all the element in mall(the complement) in the source, if found, then add it to delete array, else, add it to add array
+	var added, deleted []string
+	for v := range mall {
+		_, exist := msrc[v]
+		if exist {
+			deleted = append(deleted, v)
+		} else {
+			added = append(added, v)
+		}
+	}
+
+	return added, deleted
+}
+
+func (e *AlluxioEngine) processUFS (added[] string, removed[] string) (err error) {
+	dataset, err := utils.GetDataset(e.Client, e.name, e.namespace)
+	if err != nil {
+		return err
+	}
+
+	podName, containerName := e.getMasterPodInfo()
+	fileUitls := operations.NewAlluxioFileUtils(podName, containerName, e.namespace, e.Log)
+
+	ready := fileUitls.Ready()
+	if !ready {
+		return fmt.Errorf("the UFS is not ready")
+	}
+
+	// Iterate all the mount points, do mount if the mount point is in added array
+	for _, mount := range dataset.Spec.Mounts {
+		if e.isFluidNativeScheme(mount.MountPoint) {
+			continue
+		}
+
+		alluxioPath := fmt.Sprintf("/%s", mount.Name)
+		if len(added) > 0 && utils.ContainsString(added, alluxioPath) {
+			mountOptions := map[string]string{}
+			for key, value := range mount.Options {
+				mountOptions[key] = value
+			}
+
+			// Configure mountOptions using encryptOptions
+			// If encryptOptions have the same key with options, it will overwrite the corresponding value
+			for _, encryptOption := range mount.EncryptOptions {
+				key := encryptOption.Name
+				secretKeyRef := encryptOption.ValueFrom.SecretKeyRef
+
+				secret, err := utils.GetSecret(e.Client, secretKeyRef.Name, e.namespace)
+				if err != nil {
+					e.Log.Info("can't get the secret")
+					return err
+				}
+
+				value := secret.Data[secretKeyRef.Key]
+				e.Log.Info("get value from secret")
+
+				mountOptions[key] = string(value)
+			}
+			err = fileUitls.Mount(alluxioPath, mount.MountPoint, mountOptions, mount.ReadOnly, mount.Shared)
+			if err != nil {
+				return err
+			}
+		}
+
+
+	}
+
+	// unmount the mount point in the removed array
+	if len(removed) > 0 {
+		for _, mount_remove := range removed {
+			fileUitls.UnMount(mount_remove)
+		}
+	}
+
+	e.Log.Info("sync meta data after unmount")
+	err = e.SyncMetadata()
+	if err != nil {
+		// just report this error and ignore it because SyncMetadata isn't on the critical path of Setup
+		e.Log.Error(err, "SyncMetadata")
+		return nil
+	}
+
+	return nil
+}
