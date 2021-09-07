@@ -35,17 +35,21 @@ func (e *AlluxioEngine) setupMasterInternal() (err error) {
 		chartName = utils.GetChartsDirectory() + "/" + common.ALLUXIO_CHART
 	)
 
+	e.Log.Info("XITONG Master setupMasterInternal", "chartName", chartName)
+
 	runtime, err := e.getRuntime()
 	if err != nil {
 		return
 	}
 
 	valuefileName, err := e.generateAlluxioValueFile(runtime)
+	e.Log.Info("XITONG Master setupMasterInternal", "valuefileName", valuefileName)
 	if err != nil {
 		return
 	}
 
 	found, err := helm.CheckRelease(e.name, e.namespace)
+	e.Log.Info("XITONG Master setupMasterInternal", "found", found)
 	if err != nil {
 		return
 	}
@@ -53,6 +57,20 @@ func (e *AlluxioEngine) setupMasterInternal() (err error) {
 	if found {
 		e.Log.Info("The release is already installed", "name", e.name, "namespace", e.namespace)
 		return
+	}
+
+	currentReplicas, err := e.AssignNodesToCache(1)
+	e.Log.Info("XITONG Master setupMasterInternal", "currentReplicas", currentReplicas)
+	if err != nil {
+		return err
+	}
+
+	e.Log.Info("check the desired and current replicas",
+		"desiredReplicas", 1,
+		"currentReplicas", currentReplicas)
+
+	if currentReplicas == 0 {
+		return fmt.Errorf("the number of the current node which can be scheduled is 0")
 	}
 
 	return helm.InstallRelease(e.name, e.namespace, valuefileName, chartName)
@@ -78,6 +96,7 @@ func (e *AlluxioEngine) generateAlluxioValueFile(runtime *datav1alpha1.AlluxioRu
 	}
 
 	e.Log.Info("Generate values", "value", value)
+	e.Log.Info("XITONG master_internal.GenegenerateAlluxioValueFile, generate values", "value", value)
 
 	data, err := yaml.Marshal(value)
 	if err != nil {
