@@ -120,53 +120,53 @@ update-api-doc:
 
 # Build the docker image
 docker-build-dataset-controller: generate fmt vet
-	docker build --no-cache . -f docker/Dockerfile.dataset -t r.addops.soft.360.cn/yunzhou/dataset-controller-labelasd:v0.6.0-54d4d76
+	docker build --no-cache . -f docker/Dockerfile.dataset -t ${DATASET_CONTROLLER_IMG}:${GIT_VERSION}
 
 docker-build-alluxioruntime-controller: generate fmt vet
-	docker build --no-cache . -f docker/Dockerfile.alluxioruntime -t r.addops.soft.360.cn/yunzhou/alluxio-runtime-controller-labelasd:v0.6.0-54d4d76
+	docker build --no-cache . -f docker/Dockerfile.alluxioruntime -t ${ALLUXIORUNTIME_CONTROLLER_IMG}:${GIT_VERSION}
 
 docker-build-jindoruntime-controller: generate fmt vet
-	docker build --no-cache . -f docker/Dockerfile.jindoruntime -t r.addops.soft.360.cn/yunzhou/jindo-runtime-controller-labelasd:v0.6.0-54d4d76
+	docker build --no-cache . -f docker/Dockerfile.jindoruntime -t ${JINDORUNTIME_CONTROLLER_IMG}:${GIT_VERSION}
 
 docker-build-goosefsruntime-controller: generate fmt vet
-	docker build --no-cache . -f docker/Dockerfile.goosefsruntime -t r.addops.soft.360.cn/yunzhou/goosefsruntime-controller-labelasd:v0.6.0-54d4d76
+	docker build --no-cache . -f docker/Dockerfile.goosefsruntime -t ${GOOSEFSRUNTIME_CONTROLLER_IMG}:${GIT_VERSION}
 
 docker-build-csi: generate fmt vet
-	docker build --no-cache . -f docker/Dockerfile.csi -t r.addops.soft.360.cn/yunzhou/csi-labelasd:v0.6.0-54d4d76
+	docker build --no-cache . -f docker/Dockerfile.csi -t ${CSI_IMG}:${GIT_VERSION}
 
 docker-build-loader:
 	docker build --no-cache charts/fluid-dataloader/docker/loader -t ${LOADER_IMG}
 
 docker-build-init-users:
-	docker build --no-cache charts/alluxio/docker/init-users -t r.addops.soft.360.cn/yunzhou/init-users-labelasd:v0.6.0-54d4d76
+	docker build --no-cache charts/alluxio/docker/init-users -t ${INIT_USERS_IMG}:${GIT_VERSION}
 
 docker-build-webhook:
-	docker build --no-cache . -f docker/Dockerfile.webhook -t r.addops.soft.360.cn/yunzhou/fluid-webhook-labelasd:v0.6.0-54d4d76
+	docker build --no-cache . -f docker/Dockerfile.webhook -t ${WEBHOOK_IMG}:${GIT_VERSION}
 
 # Push the docker image
 docker-push-dataset-controller: docker-build-dataset-controller
-	starkctl push -u yunzhou -p Nw1Ew9Gf ${DATASET_CONTROLLER_IMG}:${GIT_VERSION}
+	docker push ${DATASET_CONTROLLER_IMG}:${GIT_VERSION}
 
 docker-push-alluxioruntime-controller: docker-build-alluxioruntime-controller
-	starkctl push -u yunzhou -p Nw1Ew9Gf ${ALLUXIORUNTIME_CONTROLLER_IMG}:${GIT_VERSION}
+	docker push ${ALLUXIORUNTIME_CONTROLLER_IMG}:${GIT_VERSION}
 
 docker-push-jindoruntime-controller: docker-build-jindoruntime-controller
-	starkctl push -u yunzhou -p Nw1Ew9Gf r.addops.soft.360.cn/yunzhou/jindo-runtime-controller-labelasd:v0.6.0-54d4d76
+	docker push ${JINDORUNTIME_CONTROLLER_IMG}:${GIT_VERSION}
 
 docker-push-goosefsruntime-controller: docker-build-goosefsruntime-controller
-	starkctl push -u yunzhou -p Nw1Ew9Gf r.addops.soft.360.cn/yunzhou/goosefsruntime-controller-labelasd:v0.6.0-54d4d76
+	docker push ${GOOSEFSRUNTIME_CONTROLLER_IMG}:${GIT_VERSION}
 
 docker-push-csi: docker-build-csi
-	starkctl push -u yunzhou -p Nw1Ew9Gf r.addops.soft.360.cn/yunzhou/csi-labelasd:v0.6.0-54d4d76
+	docker push ${CSI_IMG}:${GIT_VERSION}
 
 docker-push-loader: docker-build-loader
 	docker push ${LOADER_IMG}
 
 docker-push-init-users: docker-build-init-users
-	starkctl push -u yunzhou -p Nw1Ew9Gf r.addops.soft.360.cn/yunzhou/init-users-labelasd:v0.6.0-54d4d76
+	docker push ${INIT_USERS_IMG}:${GIT_VERSION}
 
 docker-push-webhook: docker-build-webhook
-	starkctl push -u yunzhou -p Nw1Ew9Gf r.addops.soft.360.cn/yunzhou/fluid-webhook-labelasd:v0.6.0-54d4d76
+	docker push ${WEBHOOK_IMG}:${GIT_VERSION}
 
 docker-build-all: docker-build-dataset-controller docker-build-alluxioruntime-controller docker-build-jindoruntime-controller docker-build-goosefsruntime-controller docker-build-csi docker-build-init-users fluid-build-webhook docker-build-goosefsruntime-controller
 docker-push-all: docker-push-dataset-controller docker-push-alluxioruntime-controller docker-push-jindoruntime-controller docker-push-jindoruntime-controller docker-push-csi docker-push-init-users docker-push-webhook docker-push-goosefsruntime-controller
